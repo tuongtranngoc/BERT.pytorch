@@ -23,61 +23,70 @@ class BookCorpusDataset(nn.Module):
             '[SEP]': 2,
             '[MASK]': 3
         }
+    def _get_next_sentence(self, sentence, next_sentence, paragraphs):
+        if random.random() < 0.5:
+            is_next=True
+        else:
+            next_sentence = random.choice(random.choices(paragraphs))
+        return sentence, next_sentence, is_next
+    
+    def _get_nsp_data_from_paragraph(self, pragraph, pragraphs, vocab, max_len):
+        nps_data_from_paragraph = []
+        for i in range(len(pragraph)-1):
+            tokens_a, tokens_b, is_next = self._get_next_sentence(pragraph[i], pragraph[i+1], pragraphs)
+            # <cls> token_a <sep> token_b <sep>
+            if len(tokens_a) + len(tokens_b) + 3 > max_len:
+                continue
+            tokens, segments = self.get_tokens_and_segments(tokens_a, tokens_b)
+            nps_data_from_paragraph.append((tokens, segments, is_next))
+        return nps_data_from_paragraph
 
-    def preprocess_data(self):
-        batch = []
-        positive = negative = 0
-        while positive != self.batch_size or negative != self.batch_size:
-            token_a_index = random.randrange(len(self.dataset['train'][0]))
-            token_b_index = random.randrange(len(self.dataset['train'][0]))
-
-            tokens_a = self.word_dict[token_a_index]
-            tokens_b = self.word_dict[token_b_index]
-
-            input_ids = [self.word_dict['CLS']] + tokens_a + [self.word_dict['SEP']] + tokens_b + [self.word_dict['SEP']]
-            segment_ids = [0] * (1 + len(tokens_a) + 1) + [1] * (len(tokens_b) + 1)
-            
-            # Create MaskLM
-            # 15% of tokens in one sentence
-            max_pred = len(input_ids)
-            n_pred = min(max_pred, max(1, int(round(len(input_ids) * 0.15))))
-            cand_make_pos = [i for i, token in enumerate(input_ids) if token != self.word_dict['[CLS]'] and token != self.word_dict['[SEP]']]
-            random.shuffle(cand_make_pos)
-
-            masked_tokens, masked_pos = [], []
-            for pos in cand_make_pos[:n_pred]:
-                masked_pos.append(pos)
-                masked_tokens.append(input_ids[pos])
-
-                if random.uniform() < 0.8:
-                    input_ids[pos] = self.word_dict['[MASK]']
-                elif random.uniform() < 0.5:
-                    index = random.randint(0, self.vocab_size-1)
-                    input_ids[pos] = self.word_dict[self.number_dict[index]]
-
-            # Zero padding
-            if self.max_pred > n_pred:
-                n_pad = self.max_pred - n_pred
-                masked_pos.extend([0] * n_pad)
-                masked_tokens.extend([0] * n_pad)
-
-            if token_a_index + 1 == token_a_index and positive < self.batch_size/2:
-                # isNext
-                batch.append([input_ids, segment_ids, masked_tokens, masked_pos, True])
-                positive += 1
-            elif token_a_index + 1 != token_b_index and negative < self.batch_size/2:
-                batch.append([input_ids, segment_ids, masked_tokens, masked_pos, False])
-                negative += 1
-
-            return batch
-
-
-
-    def create_word_dict(self, word_list):
-        for i, w in enumerate(word_list):
-            word_list[w] = i+4
-            self.number_dict = {i: w for i, w in enumerate(word_list)}
-            self.vocab_size = len(word_list)
-
+    def get_tokens_and_segments(self, token_a, token_b=None):
+        tokens = ['<cls>'] + token_a + ['<sep>']
+        segments = [0] * (len(token_a) + 2)
+        if token_b is not None:
+            tokens += token_b + ['<sep>']
+            segments += [1] * (len(token_b) + 1)
+        return tokens, segments
+    
+    def _replace_maskedlm_tokens(self, tokens, cand_pred_positions, num_mlm_preds, vocab):
+        mlm_input_tokens = [token for token in tokens]
+        pred_position_and_labels = []
+        random.shuffle(cand_pred_positions)
         
+        for mlm_pred_position in cand_pred_positions:
+            if len(pred_position_and_labels) >= num_mlm_preds:
+                break   
+            masked_token = None
+            if random.random() < 0.8:
+                masked_token = '<mask>'
+            else:
+                if random.random() < 0.5:
+                    masked_token = tokens[mlm_pred_position]
+                else:
+                    masked_token = random.choice(vocab.idx_to_token)
+            mlm_input_tokens[mlm_pred_position] = masked_token
+            pred_position_and_labels.append(
+                (mlm_pred_position, tokens[mlm_pred_position]))
+            
+        return mlm_input_tokens, pred_position_and_labels
+    
+    def _get_maskedlm_data_from_tokens(self, tokens, vocab):
+        cand_pred_positions = []
+        for i, token in enumerate(tokens):
+            if token in ['<cls>', '<sep>']:
+                continue
+            cand_pred_positions.append(i)
+        num_mlm_preds = max(1, round(len(tokens) * 0.15))
+        mlm_input_tokens, pred_positions_and_labels = self._replace_maskedlm_tokens(
+            tokens=tokens, cand_pred_positions=cand_pred_positions, num_mlm_preds=num_mlm_preds, vocab=vocab
+        )
+        pred_positions_and_labels = sorted(pred_positions_and_labels, key=lambda x: x[0])
+        pred_positions = [v[0] for v in pred_positions_and_labels]
+        mlm_pred_labels = [v[1] for v in pred_positions_and_labels]
+
+        return vocab[mlm_input_tokens], pred_positions, vocab[mlm_pred_labels]
+    
+    def _pad_bert_inputs(self, examples, max_len, vocab):
+        pass
 

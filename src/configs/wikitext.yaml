@@ -1,0 +1,5 @@
+data_path: dataset/wikitext
+batch_size: 512
+shuffle: True
+num_workers: 8
+pin_memory: False

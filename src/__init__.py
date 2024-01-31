@@ -7,7 +7,7 @@ import glob
 import os
 
 
-CFG_PATH = 'src/configs/bookcorpus.yaml'
+CFG_PATH = 'src/configs/wikitext.yaml'
 
 
 def load_config(file_path=CFG_PATH):

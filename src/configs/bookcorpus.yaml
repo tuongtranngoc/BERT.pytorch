@@ -1,3 +1,0 @@
-Train:
-  data_path: dataset/bookcorpus
-  batch_size: 12

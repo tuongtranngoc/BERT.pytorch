@@ -2,26 +2,54 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-import datasets
-import transformers
 
 import torch
+import datasets
 import torch.nn as nn
 
 import random
+from tqdm import tqdm
 
 from . import *
+from .vocab import Vocab
+
 
 class BookCorpusDataset(nn.Module):
-    def __init__(self) -> None:
-        super(BookCorpusDataset, self).__init__()
-        self.dataset = datasets.load_dataset(cfg['Train']['bookcorpus'])
+    def __init__(self, max_len) -> None:
+        paragraphs = datasets.load_from_disk(cfg['data_path'])['train']
+        paragraphs = [line['text'].strip().lower().split(' . ') for line in paragraphs if len(line['text'].split(' . ')) >= 2]
+        paragraphs = [self.tokenize(paragraph, token='word') for paragraph in tqdm(paragraphs, desc="Tokenizer ...")]
+        sentences = [sentence for paragraph in paragraphs for sentence in paragraph]
+        self.vocab = Vocab(sentences, min_freq=5, reserved_tokens=['<pad>', '<mask>', '<cls>', '<sep>'])
+        examples = []
+        
+        for paragraph in tqdm(paragraphs, desc="Generating Next Sentence and mask tokens ..."):
+            examples.extend(self._get_nsp_data_from_paragraph(paragraph, paragraphs, self.vocab, max_len))
+        examples = [(self._get_maskedlm_data_from_tokens(tokens, self.vocab) + (segments, is_next)) for tokens, segments, is_next in examples]
+        print('Padding tokens ...')
+        self.all_token_ids, self.all_segments, self.valid_lens, self.all_pred_positions, self.all_mlm_weights, \
+        self.all_mlm_labels, self.nsp_labels = self._pad_bert_inputs(examples, max_len, self.vocab)
+
+    def __getitem__(self, idx):
+        return self.all_token_ids[idx], self.all_segments[idx], self.valid_lens[idx], \
+                self.all_pred_positions[idx], self.all_mlm_weights[idx], self.all_mlm_labels[idx], self.nsp_labels[idx]
+
+    def __len__(self): return len(self.all_token_ids)
+
+    def tokenize(self, lines, token='word'):
+        if token == 'word':
+            return [line.split() for line in lines]
+        elif token == 'char':
+            return [list(line) for line in lines]
+        else:
+            print('Error: Unknown token type:' + token)
 
     def _get_next_sentence(self, sentence, next_sentence, paragraphs):
         if random.random() < 0.5:
-            is_next =True
+            is_next = True
         else:
-            next_sentence = random.choice(random.choices(paragraphs))
+            next_sentence = random.choice(random.choice(paragraphs))
+            is_next = False
         return sentence, next_sentence, is_next
     
     def _get_nsp_data_from_paragraph(self, pragraph, pragraphs, vocab, max_len):
@@ -39,12 +67,12 @@ class BookCorpusDataset(nn.Module):
             nps_data_from_paragraph.append((tokens, segments, is_next))
         return nps_data_from_paragraph
 
-    def get_tokens_and_segments(self, token_a, token_b=None):
-        tokens = ['<cls>'] + token_a + ['<sep>']
-        segments = [0] * (len(token_a) + 2)
-        if token_b is not None:
-            tokens += token_b + ['<sep>']
-            segments += [1] * (len(token_b) + 1)
+    def get_tokens_and_segments(self, tokens_a, tokens_b=None):
+        tokens = ['<cls>'] + tokens_a + ['<sep>']
+        segments = [0] * (len(tokens_a) + 2)
+        if tokens_b is not None:
+            tokens += tokens_b + ['<sep>']
+            segments += [1] * (len(tokens_b) + 1)
         return tokens, segments
     
     def _replace_maskedlm_tokens(self, tokens, cand_pred_positions, num_mlm_preds, vocab):
@@ -98,8 +126,10 @@ class BookCorpusDataset(nn.Module):
         all_pred_positions, all_mlm_weights, all_mlm_labels = [], [], []
         nsp_labels = []
 
-        for (token_ids, pred_positions, mlm_pred_label_ids, segments, is_next) in examples:
-            all_token_ids.append(torch.tensor(token_ids + [vocab['<pad>']] * (max_len - len(token_ids)), dtype=torch.long))
+        for (token_ids, pred_positions, mlm_pred_label_ids, segments, is_next) in tqdm(examples, desc="Padding tokens ..."):
+            try:
+                all_token_ids.append(torch.tensor(token_ids + [vocab['<pad>']] * (max_len - len(token_ids)), dtype=torch.long))
+            except: import ipdb; ipdb.set_trace();
             all_segments.append(torch.tensor(segments + [0] * (max_len - len(segments)), dtype=torch.long))
             valid_lens.append(torch.tensor(len(token_ids), dtype=torch.float32))
             all_pred_positions.append(torch.tensor(pred_positions + [0] * (max_num_mlm_preds - len(pred_positions)), dtype=torch.long))
@@ -109,6 +139,10 @@ class BookCorpusDataset(nn.Module):
             nsp_labels.append(torch.tensor(is_next, dtype=torch.long))
 
         return (all_token_ids, all_segments, valid_lens, all_pred_positions, all_mlm_weights, all_mlm_labels, nsp_labels)
-    
-    
 
+
+if __name__ == "__main__":
+    from torch.utils.data import DataLoader
+    dataset = BookCorpusDataset(max_len=64)
+    data_loader = DataLoader(dataset, batch_size=28, shuffle=True)
+    import ipdb; ipdb.set_trace()

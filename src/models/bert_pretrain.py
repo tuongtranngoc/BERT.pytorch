@@ -7,8 +7,10 @@ import torch.nn as nn
 
 
 class BertEncoder(nn.Module):
-    def __init__():
-        super().__init__()
+    def __init__(self, vocab_size, num_hiddens, ffn_num_hiddens, num_heads, 
+                 num_blks, dropout, max_len=1000, **kwargs):
+        super(BertEncoder, self).__init__(**kwargs)
+        
 
 
 class MaskLM(nn.Module):

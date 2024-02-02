@@ -14,7 +14,7 @@ from . import *
 from .vocab import Vocab
 
 
-class BookCorpusDataset(nn.Module):
+class WikiTextDataset(nn.Module):
     def __init__(self, max_len) -> None:
         paragraphs = datasets.load_from_disk(cfg['data_path'])['train']
         paragraphs = [line['text'].strip().lower().split(' . ') for line in paragraphs if len(line['text'].split(' . ')) >= 2]
@@ -26,9 +26,9 @@ class BookCorpusDataset(nn.Module):
         for paragraph in tqdm(paragraphs, desc="Generating Next Sentence and mask tokens ..."):
             examples.extend(self._get_nsp_data_from_paragraph(paragraph, paragraphs, self.vocab, max_len))
         examples = [(self._get_maskedlm_data_from_tokens(tokens, self.vocab) + (segments, is_next)) for tokens, segments, is_next in examples]
-        print('Padding tokens ...')
         self.all_token_ids, self.all_segments, self.valid_lens, self.all_pred_positions, self.all_mlm_weights, \
         self.all_mlm_labels, self.nsp_labels = self._pad_bert_inputs(examples, max_len, self.vocab)
+        import ipdb; ipdb.set_trace();
 
     def __getitem__(self, idx):
         return self.all_token_ids[idx], self.all_segments[idx], self.valid_lens[idx], \
@@ -127,9 +127,7 @@ class BookCorpusDataset(nn.Module):
         nsp_labels = []
 
         for (token_ids, pred_positions, mlm_pred_label_ids, segments, is_next) in tqdm(examples, desc="Padding tokens ..."):
-            try:
-                all_token_ids.append(torch.tensor(token_ids + [vocab['<pad>']] * (max_len - len(token_ids)), dtype=torch.long))
-            except: import ipdb; ipdb.set_trace();
+            all_token_ids.append(torch.tensor(token_ids + [vocab['<pad>']] * (max_len - len(token_ids)), dtype=torch.long))
             all_segments.append(torch.tensor(segments + [0] * (max_len - len(segments)), dtype=torch.long))
             valid_lens.append(torch.tensor(len(token_ids), dtype=torch.float32))
             all_pred_positions.append(torch.tensor(pred_positions + [0] * (max_num_mlm_preds - len(pred_positions)), dtype=torch.long))
@@ -137,12 +135,11 @@ class BookCorpusDataset(nn.Module):
             all_mlm_weights.append(torch.tensor([1.0] * len(mlm_pred_label_ids) + [0.0] * (max_num_mlm_preds - len(pred_positions)), dtype=torch.float32))
             all_mlm_labels.append(torch.tensor(mlm_pred_label_ids + [0] * (max_num_mlm_preds - len(mlm_pred_label_ids)), dtype=torch.long))
             nsp_labels.append(torch.tensor(is_next, dtype=torch.long))
-
         return (all_token_ids, all_segments, valid_lens, all_pred_positions, all_mlm_weights, all_mlm_labels, nsp_labels)
 
 
 if __name__ == "__main__":
     from torch.utils.data import DataLoader
-    dataset = BookCorpusDataset(max_len=64)
+    dataset = WikiTextDataset(max_len=64)
     data_loader = DataLoader(dataset, batch_size=28, shuffle=True)
     import ipdb; ipdb.set_trace()

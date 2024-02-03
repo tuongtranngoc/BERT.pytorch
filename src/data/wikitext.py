@@ -28,7 +28,6 @@ class WikiTextDataset(nn.Module):
         examples = [(self._get_maskedlm_data_from_tokens(tokens, self.vocab) + (segments, is_next)) for tokens, segments, is_next in examples]
         self.all_token_ids, self.all_segments, self.valid_lens, self.all_pred_positions, self.all_mlm_weights, \
         self.all_mlm_labels, self.nsp_labels = self._pad_bert_inputs(examples, max_len, self.vocab)
-        import ipdb; ipdb.set_trace();
 
     def __getitem__(self, idx):
         return self.all_token_ids[idx], self.all_segments[idx], self.valid_lens[idx], \

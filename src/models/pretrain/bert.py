@@ -86,7 +86,7 @@ class BERTModel(nn.Module):
                                     nn.Tanh())
         self.mlm = MaskLM(vocab_size, num_hiddens)
         self.nsp = NextSentencePred()
-
+    
     def forward(self, tokens, segments, valid_lens=None, pred_positions=None):
         encoded_X = self.encoder(tokens, segments, valid_lens)
         if pred_positions is not None:
@@ -102,10 +102,12 @@ class BERTModel(nn.Module):
 if __name__ == "__main__":
     from src.data.wikitext import WikiTextDataset
     from torch.utils.data import DataLoader
-    dataset = WikiTextDataset()
+    dataset = WikiTextDataset(max_len=64)
     data_loader = DataLoader(dataset, batch_size=1)
     vocab = dataset.vocab
     bert = BERTModel(len(vocab), num_hiddens=128, ffn_num_hiddens=256, num_heads=2, num_blks=2, dropout=0.2)
     for x in data_loader:
-        pass
+        token_ids, segments, valid_lens, pred_positions, mlm_weights, mlm_labels, nsp_labels = x
+        __, mlm_pred, nsp_pred = bert(token_ids, segments, valid_lens.reshape(-1), pred_positions)
+        import ipdb; ipdb.set_trace()
 

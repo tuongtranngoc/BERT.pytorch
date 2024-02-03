@@ -7,6 +7,7 @@ import torch
 import datasets
 import torch.nn as nn
 
+import os
 import random
 from tqdm import tqdm
 
@@ -16,6 +17,9 @@ from .vocab import Vocab
 
 class WikiTextDataset(nn.Module):
     def __init__(self, max_len) -> None:
+        if not os.path.exists(cfg['data_path']):
+            dataset = datasets.load_dataset("wikitext", "wikitext-2-v1")
+            dataset.save_to_disk(cfg['data_path'])
         paragraphs = datasets.load_from_disk(cfg['data_path'])['train']
         paragraphs = [line['text'].strip().lower().split(' . ') for line in paragraphs if len(line['text'].split(' . ')) >= 2]
         paragraphs = [self.tokenize(paragraph, token='word') for paragraph in tqdm(paragraphs, desc="Tokenizer ...")]

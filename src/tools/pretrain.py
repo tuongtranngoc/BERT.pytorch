@@ -2,11 +2,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+import os
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from . import config
+from .. import config
 from src.utils.logger import Logger
 from src.utils.metrics import BatchMeter
 from src.utils.data_utils import DataUtils
@@ -21,6 +22,7 @@ logger = Logger.get_logger('TRAINING')
 class Trainer:
     def __init__(self) -> None:
         self.start_epoch = 0
+        self.best_loss = 1e10
         self.create_data_loader()
         self.create_model()
         
@@ -54,7 +56,6 @@ class Trainer:
             for i, X in enumerate(self.dataset_loader):
                 token_ids, segments, valid_lens, pred_positions, mlm_weights, mlm_labels, nsp_labels = DataUtils.to_device(X)
                 __, mlm_preds, nsp_preds = self.model(token_ids, segments, valid_lens.reshape(-1), pred_positions)
-                # import ipdb; ipdb.set_trace();
                 total_loss, mlm_loss, nsp_loss = self.loss_func(mlm_preds, mlm_labels, mlm_weights, nsp_preds, nsp_labels, len(self.dataset.vocab))
 
                 metrics['total_loss'].update(total_loss.item())
@@ -77,13 +78,24 @@ class Trainer:
             Tensorboard.add_scalars(tag='nsp_loss',
                                     step=epoch,
                                     loss=metrics['nsp_loss'].get_value())
+            
+            current_loss = metrics['total_loss'].get_value()
+            if current_loss < self.best_loss:
+                self.best_loss = current_loss
+                self.save_ckpt(config['best_ckpt_path'], self.best_loss, epoch)
+            self.save_ckpt(config['last_ckpt_path'], current_loss, epoch)
 
 
-    def save_ckpt(self):
-        pass
-
-    def resume_training(self):
-        pass
+    def save_ckpt(self, save_path, best_loss, epoch):
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        ckpt_dict = {
+            "model": self.model.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "best_loss": best_loss,
+            "epoch": epoch
+        }
+        logger.info(f"Saving checkpoint to {save_path}")
+        torch.save(ckpt_dict, save_path)
 
 
 if __name__ == "__main__":

@@ -20,3 +20,5 @@ dropout: 0.2
 # Debugging
 log_file: logs/pretrain.log
 tensorboard: debugs/tensorboard
+best_ckpt_path: weights/best.pth
+last_ckpt_path: weights/last.pth

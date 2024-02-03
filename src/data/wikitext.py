@@ -7,6 +7,7 @@ import torch
 import datasets
 import torch.nn as nn
 
+import os
 import random
 from tqdm import tqdm
 
@@ -16,6 +17,9 @@ from .vocab import Vocab
 
 class WikiTextDataset(nn.Module):
     def __init__(self, max_len) -> None:
+        if not os.path.exists(cfg['data_path']):
+            dataset = datasets.load_dataset("wikitext", "wikitext-2-v1")
+            dataset.save_to_disk(cfg['data_path'])
         paragraphs = datasets.load_from_disk(cfg['data_path'])['train']
         paragraphs = [line['text'].strip().lower().split(' . ') for line in paragraphs if len(line['text'].split(' . ')) >= 2]
         paragraphs = [self.tokenize(paragraph, token='word') for paragraph in tqdm(paragraphs, desc="Tokenizer ...")]
@@ -28,7 +32,6 @@ class WikiTextDataset(nn.Module):
         examples = [(self._get_maskedlm_data_from_tokens(tokens, self.vocab) + (segments, is_next)) for tokens, segments, is_next in examples]
         self.all_token_ids, self.all_segments, self.valid_lens, self.all_pred_positions, self.all_mlm_weights, \
         self.all_mlm_labels, self.nsp_labels = self._pad_bert_inputs(examples, max_len, self.vocab)
-        import ipdb; ipdb.set_trace();
 
     def __getitem__(self, idx):
         return self.all_token_ids[idx], self.all_segments[idx], self.valid_lens[idx], \

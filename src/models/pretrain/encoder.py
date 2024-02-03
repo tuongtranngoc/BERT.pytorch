@@ -123,7 +123,7 @@ class MultiHeadAttention(nn.Module):
         self.W_k = nn.LazyLinear(num_hiddens, bias=bias)
         self.W_v = nn.LazyLinear(num_hiddens, bias=bias)
         self.W_o = nn.LazyLinear(num_hiddens, bias=bias)
-
+    
     def forward(self, queries, keys, values, valid_lens):
         # Shape of queries, keys, or values:
         # (batch_size, no. of queries or key-value pairs, num_hiddens)
@@ -134,7 +134,7 @@ class MultiHeadAttention(nn.Module):
         queries = self.transpose_qkv(self.W_q(queries))
         keys = self.transpose_qkv(self.W_k(keys))
         values = self.transpose_qkv(self.W_v(values))
-
+        
         if valid_lens is not None:
             # On axis 0, copy the first item (scalar or vector) for num_heads
             # times, then copy the next item, and so on

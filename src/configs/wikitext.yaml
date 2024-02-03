@@ -1,5 +1,24 @@
+# Training configuration
 data_path: dataset/wikitext
-batch_size: 512
+batch_size: 2048
 shuffle: True
 num_workers: 8
 pin_memory: False
+max_len: 64
+lr: 0.01
+resume: False
+epochs: 1000
+device: cuda
+
+# Model configuration
+num_hiddens: 128
+ffn_num_hiddens: 256
+num_heads: 2
+num_blks: 2
+dropout: 0.2
+
+# Debugging
+log_file: logs/pretrain.log
+tensorboard: debugs/tensorboard
+best_ckpt_path: weights/best.pth
+last_ckpt_path: weights/last.pth

@@ -2,9 +2,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+from typing import List, Tuple
 from . import config as cfg
 import torch
-from typing import List, Tuple
 
 
 class DataUtils:

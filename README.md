@@ -18,16 +18,15 @@ pip install -r requirements.txt
 ```
 
 ## Pre-training BERT
-### Data Preparation
-WikiText dataset will be downloaded automatically in `src/data/wikitext.py`
 
-### Training
-```bash
-python -m src.train
-```
+The dataset for pre-training BERT is a small corpus WikiText-2
+
+Results:
+
+| Total Loss | MLM Loss | NSP Loss |
+|--|--|--|
+| <p align='center'><img src="images/total_loss.png"></p> | <p align='center'><img src="images/mlm_loss.png"></p> | <p align='center'><img src="images/nsp_loss.png"></p> |
 
 ## Fine-tuning BERT
-
-## Experiments
 
 ## Reference

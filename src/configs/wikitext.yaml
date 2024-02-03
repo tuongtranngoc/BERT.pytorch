@@ -1,5 +1,18 @@
+# Training configuration
 data_path: dataset/wikitext
 batch_size: 512
 shuffle: True
 num_workers: 8
 pin_memory: False
+max_len: 64
+lr: 1e-2
+resume: False
+epochs: 200
+device: cuda
+
+# Model configuration
+num_hiddens: 128
+ffn_num_hiddens: 256
+num_heads: 2
+num_blk: 2
+dropout: 0.2

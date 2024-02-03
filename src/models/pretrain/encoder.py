@@ -134,7 +134,7 @@ class MultiHeadAttention(nn.Module):
         queries = self.transpose_qkv(self.W_q(queries))
         keys = self.transpose_qkv(self.W_k(keys))
         values = self.transpose_qkv(self.W_v(values))
-
+        
         if valid_lens is not None:
             # On axis 0, copy the first item (scalar or vector) for num_heads
             # times, then copy the next item, and so on

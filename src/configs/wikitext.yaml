@@ -7,7 +7,7 @@ pin_memory: False
 max_len: 64
 lr: 0.01
 resume: False
-epochs: 1000
+epochs: 200
 device: cuda
 
 # Model configuration

@@ -1,5 +1,6 @@
 # Training configuration
 data_path: dataset/wikitext
+vocab_path: dataset/wikitext/vocab.json
 batch_size: 2048
 shuffle: True
 num_workers: 8
@@ -20,5 +21,13 @@ dropout: 0.2
 # Debugging
 log_file: logs/pretrain.log
 tensorboard: debugs/tensorboard
-best_ckpt_path: weights/best.pth
-last_ckpt_path: weights/last.pth
+
+pretrain_checkpoints:
+  best_ckpt_path: weights/pretrain/best.pth
+  last_ckpt_path: weights/pretrain/last.pth
+
+finetune_checkpoints:
+  single_classification: 
+    best_ckpt_path: weights/finetune_single_cls/best.pth
+    last_ckpt_path: weights/finetune_single_cls/last.pth
+  

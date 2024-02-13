@@ -117,7 +117,7 @@ class WikiTextDataset(nn.Module):
         pred_positions_and_labels = sorted(pred_positions_and_labels, key=lambda x: x[0])
         pred_positions = [v[0] for v in pred_positions_and_labels]
         mlm_pred_labels = [v[1] for v in pred_positions_and_labels]
-
+        import ipdb; ipdb.set_trace();
         return vocab[mlm_input_tokens], pred_positions, vocab[mlm_pred_labels]
     
     def _pad_bert_inputs(self, examples, max_len, vocab):

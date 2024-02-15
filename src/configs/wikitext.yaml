@@ -1,6 +1,7 @@
 # Training configuration
-data_path: dataset/wikitext
+pretrain_data_path: dataset/wikitext
 vocab_path: dataset/wikitext/vocab.json
+finetune_data_path: dataset/snli
 batch_size: 2048
 shuffle: True
 num_workers: 8

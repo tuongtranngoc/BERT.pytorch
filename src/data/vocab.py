@@ -43,7 +43,7 @@ class Vocab:
     @property
     def token_freqs(self):
         return self._token_freqs
-    
+
 
 def count_corpus(tokens):
     if len(tokens) == 0 or isinstance(tokens[0], list):

@@ -8,6 +8,7 @@ import datasets
 import torch.nn as nn
 
 import os
+import json
 import random
 from tqdm import tqdm
 
@@ -17,17 +18,17 @@ from .vocab import Vocab
 
 class WikiTextDataset(nn.Module):
     def __init__(self, max_len) -> None:
-        if not os.path.exists(cfg['data_path']):
+        if not os.path.exists(cfg['pretrain_data_path']):
             dataset = datasets.load_dataset("wikitext", "wikitext-2-v1")
-            dataset.save_to_disk(cfg['data_path'])
-        paragraphs = datasets.load_from_disk(cfg['data_path'])['train']
+            dataset.save_to_disk(cfg['pretrain_data_path'])
+        paragraphs = datasets.load_from_disk(cfg['pretrain_data_path'])['train']
         paragraphs = [line['text'].strip().lower().split(' . ') for line in paragraphs if len(line['text'].split(' . ')) >= 2]
         paragraphs = [self.tokenize(paragraph, token='word') for paragraph in tqdm(paragraphs, desc="Tokenizer ...")]
         sentences = [sentence for paragraph in paragraphs for sentence in paragraph]
         self.vocab = Vocab(sentences, min_freq=5, reserved_tokens=['<pad>', '<mask>', '<cls>', '<sep>'])
+        # save vocab to disk
+        json.dump(self.vocab.token_to_idx, open(cfg['vocab_path'], 'w'), ensure_ascii=False, indent=4)
         examples = []
-        
-        import ipdb; ipdb.set_trace();
         for paragraph in tqdm(paragraphs, desc="Generating Next Sentence and mask tokens ..."):
             examples.extend(self._get_nsp_data_from_paragraph(paragraph, paragraphs, self.vocab, max_len))
         examples = [(self._get_maskedlm_data_from_tokens(tokens, self.vocab) + (segments, is_next)) for tokens, segments, is_next in examples]

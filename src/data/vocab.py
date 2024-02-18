@@ -25,7 +25,7 @@ class Vocab:
     
     def __len__(self):
         return len(self.idx_to_token)
-
+    
     def __getitem__(self, tokens):
         if not isinstance(tokens, (list, tuple)):
             return self.token_to_idx.get(tokens, self.unk)

@@ -15,18 +15,20 @@ from . import *
 
 
 class SNLIDataset(nn.Module):
-    def __init__(self, data_type='train') -> None:
+    def __init__(self, config, data_type='train') -> None:
+        self.self.cfg = config
         super(SNLIDataset, self).__init__()
-        if not os.path.join(cfg['finetune_data_path']):
+        if not os.path.join(self.cfg['finetune_data_path']):
             dataset = datasets.load_from_disk('snli')
-            dataset.save_to_disk(cfg['finetune_data_path'])
-        dataset = datasets.load_from_disk(cfg['finetune_data_path'])[data_type]
+            dataset.save_to_disk(self.cfg['finetune_data_path'])
+        dataset = datasets.load_from_disk(self.cfg['finetune_data_path'])[data_type]
         self.vocab = Vocab()
-        self.vocab.token_to_idx = json.load(open(cfg['vocab_path']))
+        self.vocab.token_to_idx = json.load(open(self.cfg['vocab_path']))
         self.vocab.idx_to_token = list(self.vocab.token_to_idx.keys())
-        all_premise_hypothesis_tokens = [[p_tokens, h_tokens] for p_tokens, h_tokens in zip (self.tokenize([sent.lower() for sent in dataset['premise']]), self.tokenize([sent.lower() for sent in dataset['hypothesis']]))]
+        all_premise_hypothesis_tokens = [[p_tokens, h_tokens] for p_tokens, h_tokens in zip \
+                (self.tokenize([sent.lower() for sent in dataset['premise']]), self.tokenize([sent.lower() for sent in dataset['hypothesis']]))]
         self.labels = torch.tensor(dataset['label'])
-        self.max_len = cfg['max_len']
+        self.max_len = self.cfg['max_len']
         self.all_token_ids, self.all_segments, self.valid_lens = self._multi_preprocess(all_premise_hypothesis_tokens)
 
     def tokenize(self, lines, token='word'):
@@ -54,7 +56,6 @@ class SNLIDataset(nn.Module):
 
         return all_token_ids, all_segments, valid_lens
 
-
     def _single_preprocess(self, premise_hypthesis_tokens):
         p_tokens, h_tokens = premise_hypthesis_tokens
         self._truncate_pair_of_tokens(p_tokens, h_tokens)
@@ -63,7 +64,7 @@ class SNLIDataset(nn.Module):
         segments = segments + [0] * (self.max_len - len(segments))
         valid_len = len(tokens)
         return token_ids, segments, valid_len
-    
+
     def _truncate_pair_of_tokens(self, p_tokens, h_tokens):
         while len(p_tokens) + len(h_tokens) > self.max_len - 3:
             if len(p_tokens) > len(h_tokens):

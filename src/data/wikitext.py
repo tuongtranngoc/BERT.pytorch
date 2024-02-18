@@ -17,17 +17,18 @@ from .vocab import Vocab
 
 
 class WikiTextDataset(nn.Module):
-    def __init__(self, max_len) -> None:
-        if not os.path.exists(cfg['pretrain_data_path']):
+    def __init__(self, max_len, config) -> None:
+        self.cfg = config
+        if not os.path.exists(self.cfg['pretrain_data_path']):
             dataset = datasets.load_dataset("wikitext", "wikitext-2-v1")
-            dataset.save_to_disk(cfg['pretrain_data_path'])
-        paragraphs = datasets.load_from_disk(cfg['pretrain_data_path'])['train']
+            dataset.save_to_disk(self.cfg['pretrain_data_path'])
+        paragraphs = datasets.load_from_disk(self.cfg['pretrain_data_path'])['train']
         paragraphs = [line['text'].strip().lower().split(' . ') for line in paragraphs if len(line['text'].split(' . ')) >= 2]
         paragraphs = [self.tokenize(paragraph, token='word') for paragraph in tqdm(paragraphs, desc="Tokenizer ...")]
         sentences = [sentence for paragraph in paragraphs for sentence in paragraph]
         self.vocab = Vocab(sentences, min_freq=5, reserved_tokens=['<pad>', '<mask>', '<cls>', '<sep>'])
         # save vocab to disk
-        json.dump(self.vocab.token_to_idx, open(cfg['vocab_path'], 'w'), ensure_ascii=False, indent=4)
+        json.dump(self.vocab.token_to_idx, open(self.cfg['vocab_path'], 'w'), ensure_ascii=False, indent=4)
         examples = []
         for paragraph in tqdm(paragraphs, desc="Generating Next Sentence and mask tokens ..."):
             examples.extend(self._get_nsp_data_from_paragraph(paragraph, paragraphs, self.vocab, max_len))
@@ -120,7 +121,7 @@ class WikiTextDataset(nn.Module):
         pred_positions_and_labels = sorted(pred_positions_and_labels, key=lambda x: x[0])
         pred_positions = [v[0] for v in pred_positions_and_labels]
         mlm_pred_labels = [v[1] for v in pred_positions_and_labels]
-        import ipdb; ipdb.set_trace();
+
         return vocab[mlm_input_tokens], pred_positions, vocab[mlm_pred_labels]
     
     def _pad_bert_inputs(self, examples, max_len, vocab):

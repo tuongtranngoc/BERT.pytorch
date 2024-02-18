@@ -7,42 +7,44 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from .. import config
 from src.utils.logger import Logger
 from src.utils.metrics import BatchMeter
 from src.utils.data_utils import DataUtils
 from src.utils.tensorboard import Tensorboard
 from src.data.wikitext import WikiTextDataset
 from src.models.pretrain.bert import BERTModel
+from src.configs.load_config import configuration
 from src.models.losses.loss_pretrain import PretrainLoss
 
 
-logger = Logger.get_logger('TRAINING')
-
 class Trainer:
-    def __init__(self) -> None:
+    def __init__(self, config) -> None:
         self.start_epoch = 0
         self.best_loss = 1e10
+        self.config = config
         self.create_data_loader()
         self.create_model()
+        self.datautil = DataUtils(config=config)
+        self.tsb = Tensorboard(config=config)
+        self.logger = Logger(config=config).get_logger('TRAINING')
         
     def create_data_loader(self):
-        self.dataset = WikiTextDataset(config['max_len'])
+        self.dataset = WikiTextDataset(self.config['max_len'], config=self.config)
         self.dataset_loader = DataLoader(dataset=self.dataset,
-                                         batch_size=config['batch_size'],
-                                         shuffle=config['shuffle'],
-                                         num_workers=config['num_workers'])
+                                         batch_size=self.config['batch_size'],
+                                         shuffle=self.config['shuffle'],
+                                         num_workers=self.config['num_workers'])
 
     def create_model(self):
         self.model = BERTModel(vocab_size=len(self.dataset.vocab), 
-                               num_hiddens=config['num_hiddens'],
-                               ffn_num_hiddens=config['ffn_num_hiddens'],
-                               num_heads=config['num_heads'],
-                               num_blks=config['num_blks'],
-                               dropout=config['dropout'],
-                               max_len=config['max_len']).to(config['device'])
+                               num_hiddens=self.config['num_hiddens'],
+                               ffn_num_hiddens=self.config['ffn_num_hiddens'],
+                               num_heads=self.config['num_heads'],
+                               num_blks=self.config['num_blks'],
+                               dropout=self.config['dropout'],
+                               max_len=self.config['max_len']).to(self.config['device'])
         self.loss_func = PretrainLoss()
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=config['lr'])
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.config['lr'])
 
 
     def train(self):
@@ -52,9 +54,9 @@ class Trainer:
             'nsp_loss': BatchMeter()
         }
         self.model.train()
-        for epoch in range(self.start_epoch, config['epochs']):
+        for epoch in range(self.start_epoch, self.config['epochs']):
             for i, X in enumerate(self.dataset_loader):
-                token_ids, segments, valid_lens, pred_positions, mlm_weights, mlm_labels, nsp_labels = DataUtils.to_device(X)
+                token_ids, segments, valid_lens, pred_positions, mlm_weights, mlm_labels, nsp_labels = self.datautil.to_device(X)
                 __, mlm_preds, nsp_preds = self.model(token_ids, segments, valid_lens.reshape(-1), pred_positions)
                 total_loss, mlm_loss, nsp_loss = self.loss_func(mlm_preds, mlm_labels, mlm_weights, nsp_preds, nsp_labels, len(self.dataset.vocab))
 
@@ -68,22 +70,22 @@ class Trainer:
 
                 print(f"Epoch {epoch} - batch {i} - total_loss: {total_loss} - mlm_loss: {mlm_loss} - nsp_loss: {nsp_loss}", end='\r')
 
-            logger.info(f"Epoch {epoch} - total_loss: {metrics['total_loss'].get_value(): .3f} - mlm_loss: {metrics['mlm_loss'].get_value(): .3f} - nsp_loss: {metrics['nsp_loss'].get_value(): .3f}")
-            Tensorboard.add_scalars(tag='total_loss',
+            self.logger.info(f"Epoch {epoch} - total_loss: {metrics['total_loss'].get_value(): .3f} - mlm_loss: {metrics['mlm_loss'].get_value(): .3f} - nsp_loss: {metrics['nsp_loss'].get_value(): .3f}")
+            self.tsb.add_scalars(tag='total_loss',
                                     step=epoch,
                                     loss=metrics['total_loss'].get_value())
-            Tensorboard.add_scalars(tag='mlm_loss',
+            self.tsb.add_scalars(tag='mlm_loss',
                                     step=epoch,
                                     loss=metrics['mlm_loss'].get_value())
-            Tensorboard.add_scalars(tag='nsp_loss',
+            self.tsb.add_scalars(tag='nsp_loss',
                                     step=epoch,
                                     loss=metrics['nsp_loss'].get_value())
             
             current_loss = metrics['total_loss'].get_value()
             if current_loss < self.best_loss:
                 self.best_loss = current_loss
-                self.save_ckpt(config['best_ckpt_path'], self.best_loss, epoch)
-            self.save_ckpt(config['last_ckpt_path'], current_loss, epoch)
+                self.save_ckpt(self.config['best_ckpt_path'], self.best_loss, epoch)
+            self.save_ckpt(self.config['last_ckpt_path'], current_loss, epoch)
 
 
     def save_ckpt(self, save_path, best_loss, epoch):
@@ -94,10 +96,11 @@ class Trainer:
             "best_loss": best_loss,
             "epoch": epoch
         }
-        logger.info(f"Saving checkpoint to {save_path}")
+        self.logger.info(f"Saving checkpoint to {save_path}")
         torch.save(ckpt_dict, save_path)
 
 
 if __name__ == "__main__":
-    trainer = Trainer()
+    cfg = configuration('pretrain_wikitext')
+    trainer = Trainer(cfg)
     trainer.train()

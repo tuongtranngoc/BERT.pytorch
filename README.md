@@ -29,4 +29,12 @@ Results:
 
 ## Fine-tuning BERT
 
+**Single Text Classification**
+
+**Pair Text Classification**
+
+**Text Tagging**
+
+**Question Answering**
+
 ## Reference

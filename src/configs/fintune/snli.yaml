@@ -1,15 +1,27 @@
 # Training configuration
 vocab_path: dataset/wikitext/vocab.json
 finetune_data_path: dataset/snli
-batch_size: 2048
-shuffle: True
-num_workers: 8
-pin_memory: False
-max_len: 64
-lr: 0.01
-resume: False
-epochs: 200
 device: cuda
+
+Train:
+  batch_size: 2048
+  shuffle: True
+  num_workers: 8
+  pin_memory: False
+  max_len: 64
+  lr: 0.01
+  resume: False
+  epochs: 200
+
+Eval:
+  batch_size: 2048
+  shuffle: True
+  num_workers: 8
+  pin_memory: False
+  max_len: 64
+  lr: 0.01
+  resume: False
+  epochs: 200
 
 # Model configuration
 num_hiddens: 128

@@ -25,7 +25,7 @@ class Vocab:
     
     def __len__(self):
         return len(self.idx_to_token)
-
+    
     def __getitem__(self, tokens):
         if not isinstance(tokens, (list, tuple)):
             return self.token_to_idx.get(tokens, self.unk)
@@ -35,7 +35,7 @@ class Vocab:
         if not isinstance(indices, (list, tuple)):
             return self.idx_to_token[indices]
         return [self.idx_to_token[index] for index in indices]
-
+    
     @property
     def unk(self):
         return 0
@@ -43,7 +43,7 @@ class Vocab:
     @property
     def token_freqs(self):
         return self._token_freqs
-    
+
 
 def count_corpus(tokens):
     if len(tokens) == 0 or isinstance(tokens[0], list):

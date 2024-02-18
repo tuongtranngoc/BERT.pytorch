@@ -8,6 +8,7 @@ import datasets
 import torch.nn as nn
 
 import os
+import json
 import random
 from tqdm import tqdm
 
@@ -16,23 +17,25 @@ from .vocab import Vocab
 
 
 class WikiTextDataset(nn.Module):
-    def __init__(self, max_len) -> None:
-        if not os.path.exists(cfg['data_path']):
+    def __init__(self, max_len, config) -> None:
+        self.cfg = config
+        if not os.path.exists(self.cfg['pretrain_data_path']):
             dataset = datasets.load_dataset("wikitext", "wikitext-2-v1")
-            dataset.save_to_disk(cfg['data_path'])
-        paragraphs = datasets.load_from_disk(cfg['data_path'])['train']
+            dataset.save_to_disk(self.cfg['pretrain_data_path'])
+        paragraphs = datasets.load_from_disk(self.cfg['pretrain_data_path'])['train']
         paragraphs = [line['text'].strip().lower().split(' . ') for line in paragraphs if len(line['text'].split(' . ')) >= 2]
         paragraphs = [self.tokenize(paragraph, token='word') for paragraph in tqdm(paragraphs, desc="Tokenizer ...")]
         sentences = [sentence for paragraph in paragraphs for sentence in paragraph]
         self.vocab = Vocab(sentences, min_freq=5, reserved_tokens=['<pad>', '<mask>', '<cls>', '<sep>'])
+        # save vocab to disk
+        json.dump(self.vocab.token_to_idx, open(self.cfg['vocab_path'], 'w'), ensure_ascii=False, indent=4)
         examples = []
-        
         for paragraph in tqdm(paragraphs, desc="Generating Next Sentence and mask tokens ..."):
             examples.extend(self._get_nsp_data_from_paragraph(paragraph, paragraphs, self.vocab, max_len))
         examples = [(self._get_maskedlm_data_from_tokens(tokens, self.vocab) + (segments, is_next)) for tokens, segments, is_next in examples]
         self.all_token_ids, self.all_segments, self.valid_lens, self.all_pred_positions, self.all_mlm_weights, \
         self.all_mlm_labels, self.nsp_labels = self._pad_bert_inputs(examples, max_len, self.vocab)
-
+    
     def __getitem__(self, idx):
         return self.all_token_ids[idx], self.all_segments[idx], self.valid_lens[idx], \
                 self.all_pred_positions[idx], self.all_mlm_weights[idx], self.all_mlm_labels[idx], self.nsp_labels[idx]
@@ -66,6 +69,7 @@ class WikiTextDataset(nn.Module):
             # <cls> token_a <sep> token_b <sep>
             if len(tokens_a) + len(tokens_b) + 3 > max_len:
                 continue
+
             tokens, segments = self.get_tokens_and_segments(tokens_a, tokens_b)
             nps_data_from_paragraph.append((tokens, segments, is_next))
         return nps_data_from_paragraph
@@ -117,7 +121,7 @@ class WikiTextDataset(nn.Module):
         pred_positions_and_labels = sorted(pred_positions_and_labels, key=lambda x: x[0])
         pred_positions = [v[0] for v in pred_positions_and_labels]
         mlm_pred_labels = [v[1] for v in pred_positions_and_labels]
-        import ipdb; ipdb.set_trace();
+
         return vocab[mlm_input_tokens], pred_positions, vocab[mlm_pred_labels]
     
     def _pad_bert_inputs(self, examples, max_len, vocab):
@@ -134,7 +138,6 @@ class WikiTextDataset(nn.Module):
             all_segments.append(torch.tensor(segments + [0] * (max_len - len(segments)), dtype=torch.long))
             valid_lens.append(torch.tensor(len(token_ids), dtype=torch.float32))
             all_pred_positions.append(torch.tensor(pred_positions + [0] * (max_num_mlm_preds - len(pred_positions)), dtype=torch.long))
-
             all_mlm_weights.append(torch.tensor([1.0] * len(mlm_pred_label_ids) + [0.0] * (max_num_mlm_preds - len(pred_positions)), dtype=torch.float32))
             all_mlm_labels.append(torch.tensor(mlm_pred_label_ids + [0] * (max_num_mlm_preds - len(mlm_pred_label_ids)), dtype=torch.long))
             nsp_labels.append(torch.tensor(is_next, dtype=torch.long))

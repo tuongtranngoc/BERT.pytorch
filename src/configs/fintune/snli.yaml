@@ -1,0 +1,40 @@
+# Training configuration
+vocab_path: dataset/wikitext/vocab.json
+finetune_data_path: dataset/snli
+device: cuda
+
+Train:
+  batch_size: 2048
+  shuffle: True
+  num_workers: 8
+  pin_memory: False
+  max_len: 64
+  lr: 0.01
+  resume: False
+  epochs: 200
+
+Eval:
+  batch_size: 2048
+  shuffle: True
+  num_workers: 8
+  pin_memory: False
+  max_len: 64
+  lr: 0.01
+  resume: False
+  epochs: 200
+
+# Model configuration
+num_hiddens: 128
+ffn_num_hiddens: 256
+num_heads: 2
+num_blks: 2
+dropout: 0.2
+
+# Debugging
+log_file: logs/pretrain.log
+tensorboard: debugs/tensorboard
+
+single_classification: 
+  best_ckpt_path: weights/finetune_single_cls/best.pth
+  last_ckpt_path: weights/finetune_single_cls/last.pth
+  

@@ -19,7 +19,7 @@ class SNLIDataset(nn.Module):
         self.self.cfg = config
         super(SNLIDataset, self).__init__()
         if not os.path.join(self.cfg['finetune_data_path']):
-            dataset = datasets.load_from_disk('snli')
+            dataset = datasets.load_dataset('snli')
             dataset.save_to_disk(self.cfg['finetune_data_path'])
         dataset = datasets.load_from_disk(self.cfg['finetune_data_path'])[data_type]
         self.vocab = Vocab()

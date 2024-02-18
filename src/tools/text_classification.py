@@ -18,8 +18,8 @@ from src.models.pretrain.bert import BERTModel
 class Trainer:
     def __init__(self, config) -> None:
         self.config = config
-        self.datautils = DataUtils(config)
         self.tsb = Tensorboard(config)
+        self.datautils = DataUtils(config)
         self.logger = Logger(config).get_logger('TRAINING')
             
     def load_pretrained_model(self):
@@ -44,7 +44,7 @@ class Trainer:
                                        batch_size=self.config['Eval']['batch_size'],
                                        shuffle=self.config['Eval']['shuffle'],
                                        num_workers=self.config['Eval']['num_workers'])
-    
+
     def create_model(self):
         pass
         

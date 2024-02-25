@@ -16,8 +16,8 @@ from . import *
 
 class SNLIDataset(nn.Module):
     def __init__(self, config, data_type='train') -> None:
-        self.self.cfg = config
         super(SNLIDataset, self).__init__()
+        self.cfg = config
         if not os.path.join(self.cfg['finetune_data_path']):
             dataset = datasets.load_dataset('snli')
             dataset.save_to_disk(self.cfg['finetune_data_path'])
@@ -26,8 +26,10 @@ class SNLIDataset(nn.Module):
         self.vocab.token_to_idx = json.load(open(self.cfg['vocab_path']))
         self.vocab.idx_to_token = list(self.vocab.token_to_idx.keys())
         all_premise_hypothesis_tokens = [[p_tokens, h_tokens] for p_tokens, h_tokens in zip \
-                (self.tokenize([sent.lower() for sent in dataset['premise']]), self.tokenize([sent.lower() for sent in dataset['hypothesis']]))]
-        self.labels = torch.tensor(dataset['label'])
+                (self.tokenize([sent.lower() for sent, l in zip(dataset['premise'], dataset['label']) if l!=-1]), \
+                 self.tokenize([sent.lower() for sent, l in zip(dataset['hypothesis'], dataset['label']) if l!=-1]))]
+        self.labels = torch.tensor(dataset['label'], dtype=torch.long)
+        self.labels = self.labels[self.labels>=0]
         self.max_len = self.cfg['max_len']
         self.all_token_ids, self.all_segments, self.valid_lens = self._multi_preprocess(all_premise_hypothesis_tokens)
 
@@ -38,7 +40,7 @@ class SNLIDataset(nn.Module):
             return [list(line) for line in lines]
         else:
             print('Error: Unknown token type:' + token)
-
+    
     def get_tokens_and_segments(self, tokens_a, tokens_b=None):
         tokens = ['<cls>'] + tokens_a + ['<sep>']
         segments = [0] * (len(tokens_a) + 2)
@@ -71,9 +73,9 @@ class SNLIDataset(nn.Module):
                 p_tokens.pop()
             else:
                 h_tokens.pop()
-
+    
     def __getitem__(self, idx):
-        return self.all_token_ids[idx], self.all_segments[idx], self.valid_lens[idx], self.labels[idx]
+        return (self.all_token_ids[idx], self.all_segments[idx], self.valid_lens[idx]), self.labels[idx]
     
     def __len__(self): return len(self.all_token_ids)
 

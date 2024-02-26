@@ -43,35 +43,35 @@ class Trainer:
         self.train_dataset = SNLIDataset(self.config, data_type='train')
         self.valid_dataset = SNLIDataset(self.config, data_type='validation')
         self.train_loader = DataLoader(self.train_dataset,
-                                       batch_size=self.config['Train']['batch_size'],
                                        shuffle=self.config['Train']['shuffle'],
+                                       batch_size=self.config['Train']['batch_size'],
                                        num_workers=self.config['Train']['num_workers'])
         self.valid_loader = DataLoader(self.valid_dataset,
-                                       batch_size=self.config['Eval']['batch_size'],
                                        shuffle=self.config['Eval']['shuffle'],
+                                       batch_size=self.config['Eval']['batch_size'],
                                        num_workers=self.config['Eval']['num_workers'])
-
+    
     def create_model(self):
         self.model = BertSingleClassifier(self.pretrained_model).to(self.config['device'])
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.config['lr'])
-        self.loss = SingleTextClassifierLoss()
-
+        self.loss_fn = SingleTextClassifierLoss()
+    
     def train(self):
         metrics = {
             'loss': BatchMeter()
-        }
+            }
         self.model.train()
         for epoch in range(1, self.config['Train']['epochs']):
             for i, (X, y) in enumerate(self.train_loader):
                 X = self.datautils.to_device(X)
                 y = self.datautils.to_device(y)
                 out = self.model(X)
-                loss = self.loss(out, y)
-                metrics['loss'].update(loss.item())
+                loss = self.loss_fn(out, y)
                 print(f"Epoch {epoch}/ Batch {i} - loss: {loss}", end='\r')
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+                metrics['loss'].update(loss.item())
             
             self.logger.info(f"Epoch {epoch} - loss: {metrics['loss'].get_value(): .4f}")
 

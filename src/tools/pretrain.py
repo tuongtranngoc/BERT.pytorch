@@ -31,22 +31,22 @@ class Trainer:
     def create_data_loader(self):
         self.dataset = WikiTextDataset(self.config['max_len'], config=self.config)
         self.dataset_loader = DataLoader(dataset=self.dataset,
-                                         batch_size=self.config['batch_size'],
                                          shuffle=self.config['shuffle'],
+                                         batch_size=self.config['batch_size'],
                                          num_workers=self.config['num_workers'])
 
     def create_model(self):
         self.model = BERTModel(vocab_size=len(self.dataset.vocab), 
+                               dropout=self.config['dropout'],
+                               num_blks=self.config['num_blks'],
+                               num_heads=self.config['num_heads'],
                                num_hiddens=self.config['num_hiddens'],
                                ffn_num_hiddens=self.config['ffn_num_hiddens'],
-                               num_heads=self.config['num_heads'],
-                               num_blks=self.config['num_blks'],
-                               dropout=self.config['dropout'],
                                max_len=self.config['max_len']).to(self.config['device'])
         self.loss_func = PretrainLoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.config['lr'])
 
-
+    
     def train(self):
         metrics = {
             'total_loss': BatchMeter(),
@@ -59,7 +59,7 @@ class Trainer:
                 token_ids, segments, valid_lens, pred_positions, mlm_weights, mlm_labels, nsp_labels = self.datautil.to_device(X)
                 __, mlm_preds, nsp_preds = self.model(token_ids, segments, valid_lens.reshape(-1), pred_positions)
                 total_loss, mlm_loss, nsp_loss = self.loss_func(mlm_preds, mlm_labels, mlm_weights, nsp_preds, nsp_labels, len(self.dataset.vocab))
-
+                
                 metrics['total_loss'].update(total_loss.item())
                 metrics['nsp_loss'].update(nsp_loss.item())
                 metrics['mlm_loss'].update(mlm_loss.item())
@@ -84,9 +84,8 @@ class Trainer:
             current_loss = metrics['total_loss'].get_value()
             if current_loss < self.best_loss:
                 self.best_loss = current_loss
-                self.save_ckpt(self.config['best_ckpt_path'], self.best_loss, epoch)
-            self.save_ckpt(self.config['last_ckpt_path'], current_loss, epoch)
-
+                self.save_ckpt(self.config['pretrain_checkpoints']['best_ckpt_path'], self.best_loss, epoch)
+            self.save_ckpt(self.config['pretrain_checkpoints']['last_ckpt_path'], current_loss, epoch)
 
     def save_ckpt(self, save_path, best_loss, epoch):
         os.makedirs(os.path.dirname(save_path), exist_ok=True)

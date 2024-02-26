@@ -22,14 +22,14 @@ class SNLIDataset(nn.Module):
             dataset = datasets.load_dataset('snli')
             dataset.save_to_disk(self.cfg['finetune_data_path'])
         dataset = datasets.load_from_disk(self.cfg['finetune_data_path'])[data_type]
+        dataset = [data for data in dataset if data['label']>=0]
         self.vocab = Vocab()
         self.vocab.token_to_idx = json.load(open(self.cfg['vocab_path']))
         self.vocab.idx_to_token = list(self.vocab.token_to_idx.keys())
         all_premise_hypothesis_tokens = [[p_tokens, h_tokens] for p_tokens, h_tokens in zip \
-                (self.tokenize([sent.lower() for sent, l in zip(dataset['premise'], dataset['label']) if l!=-1]), \
-                 self.tokenize([sent.lower() for sent, l in zip(dataset['hypothesis'], dataset['label']) if l!=-1]))]
-        self.labels = torch.tensor(dataset['label'], dtype=torch.long)
-        self.labels = self.labels[self.labels>=0]
+                (self.tokenize([sent['premise'].lower() for sent in dataset]), \
+                 self.tokenize([sent['hypothesis'].lower() for sent in dataset]))]
+        self.labels = torch.tensor([l['label'] for l in dataset], dtype=torch.long)
         self.max_len = self.cfg['max_len']
         self.all_token_ids, self.all_segments, self.valid_lens = self._multi_preprocess(all_premise_hypothesis_tokens)
 
@@ -66,7 +66,7 @@ class SNLIDataset(nn.Module):
         segments = segments + [0] * (self.max_len - len(segments))
         valid_len = len(tokens)
         return token_ids, segments, valid_len
-
+    
     def _truncate_pair_of_tokens(self, p_tokens, h_tokens):
         while len(p_tokens) + len(h_tokens) > self.max_len - 3:
             if len(p_tokens) > len(h_tokens):

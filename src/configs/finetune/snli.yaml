@@ -11,7 +11,7 @@ Train:
   pin_memory: False
   max_len: 64
   resume: False
-  epochs: 20
+  epochs: 200
 
 Eval:
   batch_size: 2048

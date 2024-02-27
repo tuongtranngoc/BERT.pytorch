@@ -16,18 +16,20 @@ from . import *
 
 class SNLIDataset(nn.Module):
     def __init__(self, config, data_type='train') -> None:
-        self.self.cfg = config
         super(SNLIDataset, self).__init__()
+        self.cfg = config
         if not os.path.join(self.cfg['finetune_data_path']):
-            dataset = datasets.load_from_disk('snli')
+            dataset = datasets.load_dataset('snli')
             dataset.save_to_disk(self.cfg['finetune_data_path'])
         dataset = datasets.load_from_disk(self.cfg['finetune_data_path'])[data_type]
+        dataset = [data for data in dataset if data['label']>=0]
         self.vocab = Vocab()
         self.vocab.token_to_idx = json.load(open(self.cfg['vocab_path']))
         self.vocab.idx_to_token = list(self.vocab.token_to_idx.keys())
         all_premise_hypothesis_tokens = [[p_tokens, h_tokens] for p_tokens, h_tokens in zip \
-                (self.tokenize([sent.lower() for sent in dataset['premise']]), self.tokenize([sent.lower() for sent in dataset['hypothesis']]))]
-        self.labels = torch.tensor(dataset['label'])
+                (self.tokenize([sent['premise'].lower() for sent in dataset]), \
+                 self.tokenize([sent['hypothesis'].lower() for sent in dataset]))]
+        self.labels = torch.tensor([l['label'] for l in dataset], dtype=torch.long)
         self.max_len = self.cfg['max_len']
         self.all_token_ids, self.all_segments, self.valid_lens = self._multi_preprocess(all_premise_hypothesis_tokens)
 
@@ -38,7 +40,7 @@ class SNLIDataset(nn.Module):
             return [list(line) for line in lines]
         else:
             print('Error: Unknown token type:' + token)
-
+    
     def get_tokens_and_segments(self, tokens_a, tokens_b=None):
         tokens = ['<cls>'] + tokens_a + ['<sep>']
         segments = [0] * (len(tokens_a) + 2)
@@ -64,16 +66,16 @@ class SNLIDataset(nn.Module):
         segments = segments + [0] * (self.max_len - len(segments))
         valid_len = len(tokens)
         return token_ids, segments, valid_len
-
+    
     def _truncate_pair_of_tokens(self, p_tokens, h_tokens):
         while len(p_tokens) + len(h_tokens) > self.max_len - 3:
             if len(p_tokens) > len(h_tokens):
                 p_tokens.pop()
             else:
                 h_tokens.pop()
-
+    
     def __getitem__(self, idx):
-        return self.all_token_ids[idx], self.all_segments[idx], self.valid_lens[idx], self.labels[idx]
+        return (self.all_token_ids[idx], self.all_segments[idx], self.valid_lens[idx]), self.labels[idx]
     
     def __len__(self): return len(self.all_token_ids)
 

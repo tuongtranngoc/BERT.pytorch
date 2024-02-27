@@ -16,6 +16,6 @@ class PretrainLoss(nn.Module):
         mlm_loss = self.mlm_loss(mlm_preds.reshape(-1, vocab_size), mlm_targets.reshape(-1)) * mlm_weights.reshape(-1, 1)
         mlm_loss = mlm_loss.sum() / (mlm_weights.sum() + 1e-8)
         nsp_loss = self.nsp_loss(nsp_preds, nsp_targets)
-
+        
         total_loss = mlm_loss + nsp_loss
         return total_loss, mlm_loss, nsp_loss

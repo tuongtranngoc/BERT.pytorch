@@ -46,13 +46,13 @@ class Trainer:
         self.loss_func = PretrainLoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.config['lr'])
 
-    
     def train(self):
         metrics = {
             'total_loss': BatchMeter(),
             'mlm_loss': BatchMeter(),
             'nsp_loss': BatchMeter()
         }
+        
         self.model.train()
         for epoch in range(self.start_epoch, self.config['epochs']):
             for i, X in enumerate(self.dataset_loader):

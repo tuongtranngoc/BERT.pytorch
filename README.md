@@ -21,6 +21,10 @@ pip install -r requirements.txt
 
 The dataset for pre-training BERT is a small corpus WikiText-2
 
+```bash
+python -m src.tools.pretrain
+```
+
 Results:
 
 | Total Loss | MLM Loss | NSP Loss |
@@ -31,10 +35,31 @@ Results:
 
 **Single Text Classification**
 
+The dataset for fine-tuning is a small [SNLI](https://huggingface.co/datasets/snli)
+
+```bash
+python -m src.tools.text_classification
+```
+
 **Pair Text Classification**
+
+```bash
+python -m src.tools.text_pair_classification
+```
 
 **Text Tagging**
 
+```bash
+python -m src.tools.text_tagging
+```
+
 **Question Answering**
 
+```bash
+python -m src.tools.question_answering
+```
+
+
 ## Reference
++ [Natural Language Processing: Application](https://d2l.ai/chapter_natural-language-processing-applications/index.html)
++ [BERT paper](https://arxiv.org/abs/1810.04805)

@@ -56,6 +56,9 @@ class Trainer:
         self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.config['lr'])
         self.loss_fn = SingleTextClassifierLoss()
     
+    def compute_acc(self):
+        pass
+    
     def train(self):
         metrics = {
             'loss': BatchMeter()

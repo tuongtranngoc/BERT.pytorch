@@ -7,9 +7,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class BertSingleClassifier(nn.Module):
+class BertTextTagging(nn.Module):
     def __init__(self, pretrain_bert, n_classes) -> None:
-        super(BertSingleClassifier, self).__init__()
+        super(BertTextTagging, self).__init__()
         self.encoder = pretrain_bert.encoder
         self.hidden = pretrain_bert.hidden
         self.output = nn.LazyLinear(n_classes)

@@ -1,7 +1,7 @@
 # Training configuration
 vocab_path: dataset/wikitext/vocab.json
-finetune_data_path: dataset/snli
-n_classes: 3
+finetune_data_path: dataset/treebank
+n_classes: 38
 device: cuda
 lr: 0.001
 
@@ -12,7 +12,7 @@ Train:
   pin_memory: False
   max_len: 64
   resume: False
-  epochs: 200
+  epochs: 500
 
 Eval:
   batch_size: 2048
@@ -29,12 +29,12 @@ dropout: 0.2
 max_len: 64
 
 # Debugging
-log_file: logs/finetune/text_classification.log
-tensorboard: debugs/tensorboard/text_classification
+log_file: logs/finetune/text_tagging.log
+tensorboard: debugs/tensorboard/text_tagging
 
 finetune_checkpoints: 
-  best_ckpt_path: weights/finetune_single_cls/best.pth
-  last_ckpt_path: weights/finetune_single_cls/last.pth
+  best_ckpt_path: weights/finetune_text_tagging/best.pth
+  last_ckpt_path: weights/finetune_text_tagging/last.pth
 
 pretrain_checkpoints:
   best_ckpt_path: weights/pretrain/best.pth

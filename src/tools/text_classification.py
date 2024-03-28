@@ -55,7 +55,7 @@ class Trainer:
                                        num_workers=self.config['Eval']['num_workers'])
     
     def create_model(self):
-        self.model = BertSingleClassifier(self.pretrained_model).to(self.config['device'])
+        self.model = BertSingleClassifier(self.pretrained_model, self.config['n_classes']).to(self.config['device'])
         self.optimizer = torch.optim.AdamW(params=self.model.parameters(), lr=self.config['lr'])
         self.loss_fn = SingleTextClassifierLoss()
     
@@ -89,10 +89,10 @@ class Trainer:
             self.tsb.add_scalars(tag='acc', step=epoch, acc=metrics['acc'].get_value())
 
             current_acc = metrics['acc'].get_value()
-            if current_acc < self.best_acc:
+            if current_acc > self.best_acc:
                 self.best_acc = current_acc
-                self.save_ckpt(self.config['single_classification']['best_ckpt_path'], self.best_acc, epoch)
-            self.save_ckpt(self.config['single_classification']['last_ckpt_path'], current_acc, epoch)
+                self.save_ckpt(self.config['finetune_checkpoints']['best_ckpt_path'], self.best_acc, epoch)
+            self.save_ckpt(self.config['finetune_checkpoints']['last_ckpt_path'], current_acc, epoch)
 
     def save_ckpt(self, save_path, best_acc, epoch):
         os.makedirs(os.path.dirname(save_path), exist_ok=True)

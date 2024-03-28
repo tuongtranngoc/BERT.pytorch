@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import os
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from src.utils.logger import Logger
@@ -26,6 +27,8 @@ class Trainer:
         self.create_data_loader()
         self.load_pretrained_model()
         self.create_model()
+
+        self.best_acc = 0.0
             
     def load_pretrained_model(self):
         self.pretrained_model = BERTModel(vocab_size=len(self.train_dataset.vocab), 
@@ -36,8 +39,8 @@ class Trainer:
                                dropout=self.config['dropout'],
                                max_len=self.config['max_len']).to(self.config['device'])
         
-        ckpt = torch.load(self.config['pretrain_checkpoints']['best_ckpt_path'], map_location=self.config['device'])['model']
-        self.pretrained_model.load_state_dict(ckpt)
+        ckpt = torch.load(self.config['pretrain_checkpoints']['best_ckpt_path'], map_location=self.config['device'])
+        self.pretrained_model.load_state_dict(ckpt, strict=False)
     
     def create_data_loader(self):
         self.train_dataset = SNLIDataset(self.config, data_type='train')
@@ -53,15 +56,18 @@ class Trainer:
     
     def create_model(self):
         self.model = BertSingleClassifier(self.pretrained_model).to(self.config['device'])
-        self.optimizer = torch.optim.Adam(params=self.model.parameters(), lr=self.config['lr'])
+        self.optimizer = torch.optim.AdamW(params=self.model.parameters(), lr=self.config['lr'])
         self.loss_fn = SingleTextClassifierLoss()
     
-    def compute_acc(self):
-        pass
+    def compute_acc(self, y_pred, y_t):
+        y_pred = F.softmax(y_pred, dim=1).max(dim=1)[1]
+        acc = torch.sum(y_pred==y_t) / len(y_t)
+        return acc
     
     def train(self):
         metrics = {
-            'loss': BatchMeter()
+            'loss': BatchMeter(),
+            'acc': BatchMeter()
             }
         self.model.train()
         for epoch in range(1, self.config['Train']['epochs']):
@@ -69,15 +75,34 @@ class Trainer:
                 X = self.datautils.to_device(X)
                 y = self.datautils.to_device(y)
                 out = self.model(X)
+                acc = self.compute_acc(out, y)
                 loss = self.loss_fn(out, y)
-                print(f"Epoch {epoch}/ Batch {i} - loss: {loss}", end='\r')
+                print(f"Epoch {epoch}/ Batch {i} - loss: {loss}, acc: {acc}", end='\r')
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
                 metrics['loss'].update(loss.item())
-            
-            self.logger.info(f"Epoch {epoch} - loss: {metrics['loss'].get_value(): .4f}")
+                
+            self.logger.info(f"Epoch {epoch} - loss: {metrics['loss'].get_value(): .4f}, acc: {metrics['acc'].get_value(): .4f}")
+            self.tsb.add_scalars(tag='loss', step=epoch, loss=metrics['loss'].get_value())
+            self.tsb.add_scalars(tag='acc', step=epoch, acc=metrics['acc'].get_value())
 
+            current_acc = metrics['acc'].get_value()
+            if current_acc < self.best_acc:
+                self.best_acc = current_acc
+                self.save_ckpt(self.config['single_classification']['best_ckpt_path'], self.best_acc, epoch)
+            self.save_ckpt(self.config['single_classification']['last_ckpt_path'], current_acc, epoch)
+
+    def save_ckpt(self, save_path, best_acc, epoch):
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        ckpt_dict = {
+            "model": self.model.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "best_loss": best_acc,
+            "epoch": epoch
+        }
+        self.logger.info(f"Saving checkpoint to {save_path}")
+        torch.save(ckpt_dict, save_path)
 
 if __name__ == "__main__":
     from src.configs.load_config import configuration

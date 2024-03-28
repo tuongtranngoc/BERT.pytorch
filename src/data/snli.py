@@ -54,7 +54,7 @@ class SNLIDataset(nn.Module):
         out = pool.map(self._single_preprocess, all_premise_hypthesis_tokens)
         all_token_ids = torch.tensor([token_ids for token_ids, __, __ in out], dtype=torch.long)
         all_segments = torch.tensor([segments for __, segments, __ in out], dtype=torch.long)
-        valid_lens = torch.tensor([valid_len for __, __, valid_len in out])
+        valid_lens = torch.tensor([valid_len for __, __, valid_len in out], dtype=torch.long)
 
         return all_token_ids, all_segments, valid_lens
 

@@ -67,7 +67,7 @@ class Trainer:
                 self.optimizer.zero_grad()
                 total_loss.backward()
                 self.optimizer.step()
-
+                
                 print(f"Epoch {epoch} - batch {i} - total_loss: {total_loss} - mlm_loss: {mlm_loss} - nsp_loss: {nsp_loss}", end='\r')
 
             self.logger.info(f"Epoch {epoch} - total_loss: {metrics['total_loss'].get_value(): .3f} - mlm_loss: {metrics['mlm_loss'].get_value(): .3f} - nsp_loss: {metrics['nsp_loss'].get_value(): .3f}")

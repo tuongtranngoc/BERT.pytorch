@@ -49,9 +49,18 @@ Results:
 
 **Pair Text Classification**
 
+The dataset for fine-tuning is a small [Semantic Textual Similarity](https://huggingface.co/datasets/stsb_multi_mt)
+
 ```bash
 python -m src.tools.text_pair_classification
 ```
+
+Results:
+
+| Total Loss |
+|--|
+| <p align='center'><img src="images/text_pair_cls.jpg"></p> |
+
 
 **Text Tagging**
 

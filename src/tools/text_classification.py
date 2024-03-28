@@ -89,7 +89,7 @@ class Trainer:
             self.tsb.add_scalars(tag='acc', step=epoch, acc=metrics['acc'].get_value())
 
             current_acc = metrics['acc'].get_value()
-            if current_acc < self.best_acc:
+            if current_acc > self.best_acc:
                 self.best_acc = current_acc
                 self.save_ckpt(self.config['single_classification']['best_ckpt_path'], self.best_acc, epoch)
             self.save_ckpt(self.config['single_classification']['last_ckpt_path'], current_acc, epoch)

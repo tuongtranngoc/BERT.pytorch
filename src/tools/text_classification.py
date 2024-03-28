@@ -82,6 +82,7 @@ class Trainer:
                 loss.backward()
                 self.optimizer.step()
                 metrics['loss'].update(loss.item())
+                metrics['acc'].update(acc.item())
                 
             self.logger.info(f"Epoch {epoch} - loss: {metrics['loss'].get_value(): .4f}, acc: {metrics['acc'].get_value(): .4f}")
             self.tsb.add_scalars(tag='loss', step=epoch, loss=metrics['loss'].get_value())

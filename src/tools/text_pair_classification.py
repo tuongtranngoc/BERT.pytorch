@@ -81,8 +81,8 @@ class Trainer:
             current_loss = metrics['loss'].get_value()
             if current_loss < self.best_loss:
                 self.best_loss = current_loss
-                self.save_ckpt(self.config['single_classification']['best_ckpt_path'], self.best_loss, epoch)
-            self.save_ckpt(self.config['single_classification']['last_ckpt_path'], current_loss, epoch)
+                self.save_ckpt(self.config['finetune_checkpoints']['best_ckpt_path'], self.best_loss, epoch)
+            self.save_ckpt(self.config['finetune_checkpoints']['last_ckpt_path'], current_loss, epoch)
 
     def save_ckpt(self, save_path, best_loss, epoch):
         os.makedirs(os.path.dirname(save_path), exist_ok=True)

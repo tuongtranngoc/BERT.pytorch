@@ -31,7 +31,7 @@ max_len: 64
 log_file: logs/finetune/text_pair_classification.log
 tensorboard: debugs/tensorboard/text_pair_classification
 
-single_classification: 
+finetune_checkpoints: 
   best_ckpt_path: weights/finetune_pair_cls/best.pth
   last_ckpt_path: weights/finetune_pair_cls/last.pth
 

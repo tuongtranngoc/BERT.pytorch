@@ -8,7 +8,8 @@ import os
 __cfg_types__ = {
     'pretrain_wikitext': 'src/configs/pretrain/wikitext.yaml',
     'finetune_snli': 'src/configs/finetune/snli.yaml',
-    'finetune_stsb': 'src/configs/finetune/stsb_en.yaml'
+    'finetune_stsb': 'src/configs/finetune/stsb_en.yaml',
+    'finetune_treebank': 'src/configs/finetune/treebank.yaml'
 }
 
 

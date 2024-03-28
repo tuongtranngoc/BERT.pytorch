@@ -35,7 +35,7 @@ Results:
 
 **Single Text Classification**
 
-The dataset for fine-tuning is a small [SNLI](https://huggingface.co/datasets/snli)
+The dataset for fine-tuning is a small [SNLI](https://huggingface.co/datasets/snli) dataset
 
 ```bash
 python -m src.tools.text_classification
@@ -49,7 +49,7 @@ Results:
 
 **Pair Text Classification**
 
-The dataset for fine-tuning is a small [Semantic Textual Similarity](https://huggingface.co/datasets/stsb_multi_mt)
+The dataset for fine-tuning is a small [Semantic Textual Similarity](https://huggingface.co/datasets/stsb_multi_mt) dataset
 
 ```bash
 python -m src.tools.text_pair_classification
@@ -64,9 +64,18 @@ Results:
 
 **Text Tagging**
 
+The dataset for fine-tuning is a small [Penn-Treebank]() dataset
+
 ```bash
 python -m src.tools.text_tagging
 ```
+
+Results:
+
+| Total Loss | Accuracy |
+|--|--|
+| <p align='center'><img src="images/loss_text_tagging.png"></p> | <p align='center'><img src="images/acc_text_tagging.png"></p> |
+
 
 **Question Answering**
 

@@ -86,7 +86,7 @@ class Trainer:
             self.logger.info(f"Epoch {epoch} - loss: {metrics['loss'].get_value(): .4f}, acc: {metrics['acc'].get_value(): .4f}")
             self.tsb.add_scalars(tag='loss', step=epoch, loss=metrics['loss'].get_value())
             self.tsb.add_scalars(tag='acc', step=epoch, loss=metrics['acc'].get_value())
-
+            
             current_acc = metrics['acc'].get_value()
             if current_acc > self.best_acc:
                 self.best_acc = current_acc

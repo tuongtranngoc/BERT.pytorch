@@ -41,6 +41,12 @@ The dataset for fine-tuning is a small [SNLI](https://huggingface.co/datasets/sn
 python -m src.tools.text_classification
 ```
 
+Results:
+
+| Total Loss | Accuracy |
+|--|--|
+| <p align='center'><img src="images/single_cls_text_loss.png"></p> | <p align='center'><img src="images/single_cls_text_acc.png"></p> |
+
 **Pair Text Classification**
 
 ```bash

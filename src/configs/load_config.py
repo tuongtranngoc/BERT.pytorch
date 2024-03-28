@@ -7,7 +7,7 @@ import os
 
 __cfg_types__ = {
     'pretrain_wikitext': 'src/configs/pretrain/wikitext.yaml',
-    'fintune_snli': 'src/configs/finetune/snli.yaml'
+    'finetune_snli': 'src/configs/finetune/snli.yaml'
 }
 
 

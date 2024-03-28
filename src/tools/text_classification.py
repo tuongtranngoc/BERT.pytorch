@@ -107,7 +107,7 @@ class Trainer:
 
 if __name__ == "__main__":
     from src.configs.load_config import configuration
-    cfg = configuration('fintune_snli')
+    cfg = configuration('finetune_snli')
     trainer = Trainer(cfg)
     trainer.train()
         
